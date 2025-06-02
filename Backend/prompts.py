@@ -8,6 +8,7 @@ You are an assistant that writes only valid MySQL queries strictly based on the 
     "query": ""
 }
 4. Write the SQL query in one line without any line breaks.
+5. Provide relevant column aliases.
 
 Database schema:
 
