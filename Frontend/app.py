@@ -4,6 +4,7 @@ import json
 import pandas as pd
 
 BACKEND_API_URL = "http://127.0.0.1:8005/chat"
+CLEAR_CHAT_URL = "http://127.0.0.1:8005/clear_chat"
 
 def get_chatbot_response(user_query):
     try:
@@ -21,7 +22,7 @@ def get_chatbot_response(user_query):
 def main():
     st.set_page_config(page_title="Data Analyst Chatbot", page_icon="🤖")
 
-    st.markdown("<h2 style='text-align: center;'>🤖 Data Analyst Chatbot</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>🤖 AskLytics</h2><br><h3 style='text-align: center;'>Data Analyst Chatbot</h3>", unsafe_allow_html=True)
 
     # Initialize session state
     if "chat_history" not in st.session_state:
@@ -60,6 +61,12 @@ def main():
     # Clear chat button
     if st.button("🧹 Clear Chat"):
         st.session_state.chat_history = []
+        try:
+            response = requests.post(CLEAR_CHAT_URL, json={"conversation_id": "1"})
+            response.raise_for_status()
+            st.success("Chat history cleared successfully.")
+        except requests.RequestException as e:
+            st.error(f"Failed to clear chat history: {e}")
         st.rerun()
 
 if __name__ == "__main__":
