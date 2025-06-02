@@ -1,4 +1,5 @@
 import pymysql
+import re
 
 from config import *
 from prompts import system_initial_prompt
@@ -34,17 +35,7 @@ def connect_to_mysql():
     Establishes a connection to a MySQL database using PyMySQL.
 
     Returns:
-        tuple:
-            - cursor (pymysql.cursors.Cursor or None): A cursor object for executing MySQL queries if the connection is successful, otherwise None.
-            - status (bool): True if the connection is successful, False otherwise.
-
-    Side Effects:
-        Prints an error message to the console if the connection fails.
-
-    Notes:
-        - The function connects to a MySQL database named 'ecommerce' on 'localhost' 
-          using the 'root' user with password 'root'.
-        - Autocommit is enabled for the connection.
+        tuple: (conn, cursor, status)
     """
     try:
         conn = pymysql.connect(
@@ -53,38 +44,26 @@ def connect_to_mysql():
             password=mysql_password,
             database=mysql_database,
             autocommit=True
-    )
+        )
         cursor = conn.cursor()
-        return cursor, True
+        return conn, cursor, True
     except pymysql.MySQLError as e:
         print(f"Error connecting to MySQL: {e}")
-        return None, False
+        return None, None, False
 
 def apply_query_sql(query: str, is_read: bool = True):
     """
-    Executes a SQL query on a MySQL database and returns the result in JSON-like format.
-
-    Parameters:
-        query (str): The SQL query to be executed.
-        is_read (bool, optional): Specifies whether the query is a read operation (e.g., SELECT). 
-                                  Set to False for write operations (e.g., INSERT, UPDATE, DELETE). 
-                                  Defaults to True.
+    Executes a safe SQL query (no DML) on a MySQL database.
 
     Returns:
-        list[dict] or None: 
-            - If is_read is True, returns a list of dictionaries where each dictionary represents a row 
-              with column names as keys and row values as values.
-            - If is_read is False, commits the transaction and returns None.
-
-    Raises:
-        pymysql.MySQLError: If an error occurs while connecting to the database or executing the query.
+        tuple: (result or None, flag string, error or None)
     """
-    try:
-        cursor, connectedFlag = connect_to_mysql()
-        if not connectedFlag:
-            print("Failed to connect to the database.")
-            return None, 'Error', None
 
+    conn, cursor, connectedFlag = connect_to_mysql()
+    if not connectedFlag:
+        return None, 'Error', None
+
+    try:
         cursor.execute(query)
 
         if is_read:
@@ -93,10 +72,13 @@ def apply_query_sql(query: str, is_read: bool = True):
             result = [dict(zip(columns, row)) for row in rows]
             return result, 'Data', None
         else:
-            cursor.connection.commit()
+            conn.commit()
             return None, 'No Data', None
 
     except pymysql.MySQLError as e:
         print(f"Error executing query: {e}")
-        return None, 'Error', e
+        return None, 'Error', str(e)
 
+    finally:
+        cursor.close()
+        conn.close()

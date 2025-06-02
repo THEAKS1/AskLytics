@@ -8,10 +8,5 @@ class inputModel(BaseModel):
     message: str
     conversation_id: str
 
-class outputModel(BaseModel):
-    """
-    Model for output data.
-    """
-    message: str
-    role: str = "assistant"
-    status: str = "success"
+class ClearChatInput(BaseModel):
+    conversation_id: str
